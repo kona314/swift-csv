@@ -10,8 +10,11 @@ import Foundation
 /// A CSV iterator can lazily parse a CSV file. The whole file is not loaded into memory. Instead, it is parsed when the data is requested. If the data is not stored outside the iterator, the file can be parsed without using a lot of memory. The iterator can parse local and remote data.
 public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProtocol where Encoding.CodeUnit == UInt8 {
     public typealias Element = [String]
-
+    #if os(Linux)
+    var iterator: LinuxAsyncFileBytes.Iterator
+    #else 
     var iterator: URL.AsyncBytes.AsyncIterator
+    #endif 
 
     @usableFromInline
     var pieces: [String] = []
@@ -29,7 +32,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
 
     /// Create a new CSV iterator for the given URL.
     /// - Parameters:
-    ///   - url: The CSV source. This can be a URL to a local or remote file.
+    ///   - url: The CSV source. On Linux, this MUST be a file URL (`URL.isFileURL`). On all other systems, this can be a URL to a local or remote file.
     ///   - as: The type to decode to.
     ///   - hasHeaders: Mark whether the CSV file has a header. If true, the header will be used to check if each row has a valid length. If false, the first row length will be used instead.
     ///   - skipInvalidRows: If enabled, no errors will be thrown for rows that have an incorrect amount of columns.
@@ -44,7 +47,11 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
         escapeCharacter: Character = "\"",
         encoding: Encoding.Type = UTF8.self
     ) async throws {
+        #if os(Linux)
+        let iterator = try LinuxAsyncFileBytes(url: url, bufferSize: 64 * 1024).makeAsyncIterator()
+        #else
         let iterator = url.resourceBytes.makeAsyncIterator()
+        #endif 
 
         self.skipInvalidRows = skipInvalidRows
         self.iterator = iterator
