@@ -1,5 +1,5 @@
 import XCTest
-@testable import swift_csv
+@testable import SwiftCSV
 
 final class swift_csvTests: XCTestCase {
     func testExample() throws {
