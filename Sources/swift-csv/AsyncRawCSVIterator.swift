@@ -100,6 +100,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
     @usableFromInline
     mutating func readLine() async throws -> Bool {
         var isEscaped = false
+        var hasDelimeter = false
 
         var startIndex: Int = 0
 
@@ -117,6 +118,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
                 }
 
             case delimiter where !isEscaped: // comma
+                hasDelimeter = true
                 pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
                 bytes.removeAll(keepingCapacity: true)
                 startIndex = 0
@@ -136,7 +138,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
             }
         }
 
-        if !bytes.isEmpty {
+        if !bytes.isEmpty || hasDelimeter {
             pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
         }
 
