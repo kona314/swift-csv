@@ -42,10 +42,11 @@ public struct AsyncCodableCSVIterator<T: Decodable, Encoding: _UnicodeEncoding>:
         skipInvalidRows: Bool = false,
         delimiter: Character = ",",
         escapeCharacter: Character = "\"",
+        ignoreLeadingWhitespace: Bool = false,
         encoding: Encoding.Type = UTF8.self,
         booleanDecodingBehavior: BooleanDecodingBehavior = .disabled
     ) async throws {
-        let iterator = try await AsyncRawCSVIterator(url: url, hasHeaders: hasHeaders, skipInvalidRows: skipInvalidRows, delimiter: delimiter, escapeCharacter: escapeCharacter, encoding: encoding)
+        let iterator = try await AsyncRawCSVIterator(url: url, hasHeaders: hasHeaders, skipInvalidRows: skipInvalidRows, delimiter: delimiter, escapeCharacter: escapeCharacter, ignoreLeadingWhitespace: ignoreLeadingWhitespace, encoding: encoding)
 
         self.iterator = iterator
         self.headers = iterator.headers

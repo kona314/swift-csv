@@ -29,6 +29,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
     let skipInvalidRows: Bool
     let delimiter: UInt8
     let escapeCharacter: UInt8
+    let ignoreLeadingWhitespace: Bool
 
     /// Create a new CSV iterator for the given URL.
     /// - Parameters:
@@ -45,6 +46,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
         skipInvalidRows: Bool = false,
         delimiter: Character = ",",
         escapeCharacter: Character = "\"",
+        ignoreLeadingWhitespace: Bool = false,
         encoding: Encoding.Type = UTF8.self
     ) async throws {
         #if os(Linux)
@@ -66,6 +68,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
 
         self.delimiter = delimiter
         self.escapeCharacter = escapeCharacter
+        self.ignoreLeadingWhitespace = ignoreLeadingWhitespace
 
         if hasHeaders {
             _ = try await readLine()
@@ -132,6 +135,11 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
                 _ = try await iterator.next()
                 pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
                 return true
+
+            case 32 where ignoreLeadingWhitespace && !isEscaped && bytes.isEmpty: // leading space 
+                continue
+            case 9 where ignoreLeadingWhitespace && !isEscaped && bytes.isEmpty: // leading tab
+                continue 
 
             default:
                 bytes.append(value)
