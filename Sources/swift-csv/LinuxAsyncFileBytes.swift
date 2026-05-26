@@ -13,6 +13,7 @@ struct LinuxAsyncFileBytes: AsyncSequence {
         let bufferSize: Int
         var buffer: [UInt8] = []
         var index: Int = 0
+        var didClose = false
 
         mutating func next() async throws -> UInt8? {
             if index < buffer.count {
@@ -20,6 +21,10 @@ struct LinuxAsyncFileBytes: AsyncSequence {
                 let b = buffer[index]
                 index += 1
                 return b
+            }
+
+            guard !didClose else {
+                return nil
             }
 
             //if there are no buffered bytes, read the next batch and return first
@@ -31,11 +36,18 @@ struct LinuxAsyncFileBytes: AsyncSequence {
                 index = 1
                 return buffer[0]
             } else if count == 0 {
-                close(fd)
+                closeIfNeeded()
                 return nil //eof
             } else {
+                closeIfNeeded()
                 throw POSIXError(POSIXError.Code(rawValue: errno) ?? .EIO)
             }
+        }
+
+        private mutating func closeIfNeeded() {
+            guard !didClose else { return }
+            close(fd)
+            didClose = true
         }
     }
 
