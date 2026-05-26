@@ -29,7 +29,9 @@ struct LinuxAsyncFileBytes: AsyncSequence {
 
             //if there are no buffered bytes, read the next batch and return first
             buffer = [UInt8](repeating: 0, count: bufferSize)
-            let count = read(fd, &buffer, bufferSize)
+            let count = buffer.withUnsafeMutableBytes { rawBuffer in
+                read(fd, rawBuffer.baseAddress, bufferSize)
+            }
 
             if count > 0 {
                 buffer.removeLast(buffer.count - count)
