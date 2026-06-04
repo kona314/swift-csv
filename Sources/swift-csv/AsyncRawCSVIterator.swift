@@ -30,6 +30,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
     let delimiter: UInt8
     let escapeCharacter: UInt8
     let ignoreLeadingWhitespace: Bool
+    private var isAtStartOfFile: Bool = false 
 
     /// Create a new CSV iterator for the given URL.
     /// - Parameters:
@@ -122,18 +123,18 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
 
             case delimiter where !isEscaped: // comma
                 hasDelimeter = true
-                pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
+                appendCurrentPiece(from: startIndex)
                 bytes.removeAll(keepingCapacity: true)
                 startIndex = 0
 
 
             case 10 where !isEscaped: // line feed
-                pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
+                appendCurrentPiece(from: startIndex)
                 return true
 
             case 13 where !isEscaped: // carriage return
                 _ = try await iterator.next()
-                pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
+                appendCurrentPiece(from: startIndex)
                 return true
 
             case 32 where ignoreLeadingWhitespace && !isEscaped && bytes.isEmpty: // leading space 
@@ -147,10 +148,24 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
         }
 
         if !bytes.isEmpty || hasDelimeter {
-            pieces.append(String(decoding: bytes[startIndex...], as: Encoding.self))
+            appendCurrentPiece(from: startIndex)
         }
 
         return !pieces.isEmpty
+    }
+
+    mutating private func appendCurrentPiece(from startIndex: Int) {
+        var fieldBytes = Array(bytes[startIndex...])
+
+        if isAtStartOfFile {
+            isAtStartOfFile = false
+
+            if fieldBytes.starts(with: [0xEF, 0xBB, 0xBF]) { //byte-order mark
+                fieldBytes.removeFirst(3)
+            }
+        }
+
+        pieces.append(String(decoding: fieldBytes, as: Encoding.self))
     }
 }
 
