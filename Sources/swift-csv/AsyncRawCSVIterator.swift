@@ -30,7 +30,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
     let delimiter: UInt8
     let escapeCharacter: UInt8
     let ignoreLeadingWhitespace: Bool
-    private var isAtStartOfFile: Bool = false 
+    private var isAtStartOfFile: Bool = true 
 
     /// Create a new CSV iterator for the given URL.
     /// - Parameters:
