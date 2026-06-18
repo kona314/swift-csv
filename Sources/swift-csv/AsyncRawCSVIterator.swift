@@ -155,7 +155,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
     }
 
     mutating private func appendCurrentPiece(from startIndex: Int) {
-        var fieldBytes = Array(bytes[startIndex...])
+        var fieldBytes = bytes
 
         if isAtStartOfFile {
             isAtStartOfFile = false
@@ -165,6 +165,7 @@ public struct AsyncRawCSVIterator<Encoding: _UnicodeEncoding>: AsyncIteratorProt
             }
         }
 
+        fieldBytes = Array(fieldBytes[startIndex...])
         pieces.append(String(decoding: fieldBytes, as: Encoding.self))
     }
 }
